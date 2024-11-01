@@ -15,7 +15,9 @@ class FKeyedState<T> {
 
    fun emit(key: String, state: T) {
       _scope.launch {
-         val holder = _flows.getOrPut(key) { FlowHolder(releaseAble = false) }
+         val holder = _flows.getOrPut(key) {
+            FlowHolder(key = key, releaseAble = false)
+         }
          holder.releaseAble = false
          holder.flow.emit(state)
       }
@@ -25,7 +27,7 @@ class FKeyedState<T> {
       _scope.launch {
          _flows[key]?.let { holder ->
             holder.releaseAble = true
-            holder.release(key)
+            holder.release()
          }
       }
    }
@@ -35,23 +37,26 @@ class FKeyedState<T> {
       block: suspend (T) -> Unit,
    ) {
       withContext(_dispatcher) {
-         val holder = _flows.getOrPut(key) { FlowHolder(releaseAble = true) }
+         val holder = _flows.getOrPut(key) {
+            FlowHolder(key = key, releaseAble = true)
+         }
          try {
             holder.flow
                .distinctUntilChanged()
                .collect { block(it) }
          } finally {
-            holder.release(key)
+            holder.release()
          }
       }
    }
 
    private inner class FlowHolder<T>(
+      private val key: String,
       var releaseAble: Boolean,
    ) {
       val flow: MutableSharedFlow<T> = MutableSharedFlow(replay = 1)
 
-      fun release(key: String) {
+      fun release() {
          if (releaseAble && flow.subscriptionCount.value == 0) {
             _flows.remove(key)
          }
