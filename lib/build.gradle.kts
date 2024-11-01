@@ -6,7 +6,7 @@ plugins {
 
 val libGroupId = "com.sd.lib.android"
 val libArtifactId = "keyedstate"
-val libVersion = "1.0.0"
+val libVersion = "1.0.1"
 
 android {
    namespace = "com.sd.lib.keyedstate"
